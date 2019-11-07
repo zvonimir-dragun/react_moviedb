@@ -17,10 +17,17 @@ class Movie extends Component {
   };
 
   componentDidMount() {
-    this.setState({ loading: true });
-    // First fetch the movie ...
-    const endpoint = `${API_URL}movie/${this.props.match.params.movieId}?api_key=${API_KEY}&language=en-US`;
-    this.fetchItems(endpoint);
+    if (localStorage.getItem(`${this.props.match.params.movieId}`)) {
+      const state = JSON.parse(
+        localStorage.getItem(`${this.props.match.params.movieId}`)
+      );
+      this.setState({ ...state });
+    } else {
+        this.setState({ loading: true });
+      // First fetch the movie ...
+      const endpoint = `${API_URL}movie/${this.props.match.params.movieId}?api_key=${API_KEY}&language=en-US`;
+      this.fetchItems(endpoint);
+    }
   }
 
   fetchItems = endpoint => {
@@ -38,14 +45,22 @@ class Movie extends Component {
               .then(result => result.json())
               .then(result => {
                 const directors = result.crew.filter(
-                  (member) => member.job === "Director"
+                  member => member.job === "Director"
                 );
 
-                this.setState({
-                  actors: result.cast,
-                  directors,
-                  loading: false
-                });
+                this.setState(
+                  {
+                    actors: result.cast,
+                    directors,
+                    loading: false
+                  },
+                  () => {
+                    localStorage.setItem(
+                      `${this.props.match.params.movieId}`,
+                      JSON.stringify(this.state)
+                    );
+                  }
+                );
               });
           });
         }
@@ -74,7 +89,7 @@ class Movie extends Component {
           <div className="rmdb-movie-grid">
             <FourColGrid header={"Actors"}>
               {this.state.actors.map((element, i) => {
-                return <Actor key={i} actor={element} />;
+                return <Actor key={i} clickable={true} actor={element} />;
               })}
             </FourColGrid>
           </div>
@@ -82,7 +97,7 @@ class Movie extends Component {
         {!this.state.actors && !this.state.loading ? (
           <h1>No Movie Found!</h1>
         ) : null}
-        {this.state.loading ? <Spinner /> : null}}
+        {this.state.loading ? <Spinner /> : null}
       </div>
     );
   }
